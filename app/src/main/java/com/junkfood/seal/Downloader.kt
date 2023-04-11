@@ -125,7 +125,7 @@ object Downloader {
         val title: String = "",
         val uploader: String = "",
         val duration: Int = 0,
-        val fileSizeApprox: Long = 0,
+        val fileSizeApprox: Double = .0,
         val progress: Float = 0f,
         val progressText: String = "",
         val thumbnailUrl: String = "",
@@ -141,26 +141,26 @@ object Downloader {
     private val mutablePlaylistResult = MutableStateFlow(PlaylistResult())
     private val mutableErrorState = MutableStateFlow(ErrorState())
     private val mutableProcessCount = MutableStateFlow(0)
+    private val mutableQuickDownloadCount = MutableStateFlow(0)
 
     val mutableTaskList = mutableStateMapOf<String, CustomCommandTask>()
-
 
     val taskState = mutableTaskState.asStateFlow()
     val downloaderState = mutableDownloaderState.asStateFlow()
     val playlistResult = mutablePlaylistResult.asStateFlow()
     val errorState = mutableErrorState.asStateFlow()
-    private val processCount = mutableProcessCount.asStateFlow()
+    val processCount = mutableProcessCount.asStateFlow()
 
     init {
         applicationScope.launch {
             downloaderState.combine(processCount) { state, cnt ->
-                Log.d(TAG, "$cnt $state")
-
                 if (cnt > 0) true
                 else when (state) {
                     is State.Idle -> false
                     else -> true
                 }
+            }.combine(mutableQuickDownloadCount) { isRunning, cnt ->
+                if (!isRunning) cnt > 0 else true
             }.collect {
                 if (it) startService()
                 else stopService()
@@ -266,7 +266,7 @@ object Downloader {
             duration = duration?.roundToInt() ?: 0,
             taskId = id + preferencesHash,
             thumbnailUrl = thumbnail.toHttpsUrl(),
-            fileSizeApprox = fileSize ?: fileSizeApprox ?: 0,
+            fileSizeApprox = fileSize ?: fileSizeApprox ?: .0,
             playlistIndex = playlistIndex
         )
 
@@ -300,7 +300,7 @@ object Downloader {
         downloadPreferences: DownloadUtil.DownloadPreferences = DownloadUtil.DownloadPreferences()
     ) {
         applicationScope.launch(Dispatchers.IO) {
-            onProcessStarted()
+            mutableQuickDownloadCount.update { it + 1 }
             DownloadUtil.fetchVideoInfoFromUrl(
                 url = url,
                 preferences = downloadPreferences
@@ -357,7 +357,7 @@ object Downloader {
                         }
                     }
                 }
-            onProcessEnded()
+            mutableQuickDownloadCount.update { it - 1 }
         }
     }
 
@@ -394,12 +394,12 @@ object Downloader {
         newTitle: String
     ) {
         currentJob = applicationScope.launch(Dispatchers.IO) {
-            val fileSize = formatList.fold(0L) { acc, format ->
-                acc + (format.fileSize ?: format.fileSizeApprox ?: 0L)
+            val fileSize = formatList.fold(.0) { acc, format ->
+                acc + (format.fileSize ?: format.fileSizeApprox ?: .0)
             }
 
             val info =
-                videoInfo.run { if (fileSize != 0L) copy(fileSize = fileSize) else this }
+                videoInfo.run { if (fileSize != .0) copy(fileSize = fileSize) else this }
 
             val audioOnly =
                 formatList.isNotEmpty() && formatList.fold(true) { acc: Boolean, format: Format ->

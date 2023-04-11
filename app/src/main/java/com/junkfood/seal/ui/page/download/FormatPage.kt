@@ -57,6 +57,8 @@ import com.junkfood.seal.ui.component.HorizontalDivider
 import com.junkfood.seal.ui.component.PreferenceInfo
 import com.junkfood.seal.ui.component.SealDialog
 import com.junkfood.seal.util.Format
+import com.junkfood.seal.util.PreferenceUtil.getBoolean
+import com.junkfood.seal.util.VIDEO_CLIP
 import com.junkfood.seal.util.VideoClip
 import com.junkfood.seal.util.VideoInfo
 import com.junkfood.seal.util.connectWithBlank
@@ -116,7 +118,7 @@ fun FormatPageImpl(
         }, null), null)
     }
 
-    var isClipEnabled by remember { mutableStateOf(false) }
+    var isClippingVideo by remember { mutableStateOf(false) }
     val videoDuration = 0f..(videoInfo.duration?.toFloat() ?: 0f)
     var showVideoClipDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
@@ -125,7 +127,7 @@ fun FormatPageImpl(
     var videoTitle by remember { mutableStateOf("") }
 
 
-    LaunchedEffect(isClipEnabled) {
+    LaunchedEffect(isClippingVideo) {
         delay(200)
         videoClipDuration = videoDuration
     }
@@ -143,6 +145,7 @@ fun FormatPageImpl(
 
 
     val clipboardManager = LocalClipboardManager.current
+    val isClippingEnabled = VIDEO_CLIP.getBoolean()
 
     Scaffold(modifier = Modifier
         .fillMaxSize()
@@ -161,7 +164,7 @@ fun FormatPageImpl(
                 TextButton(onClick = {
                     onDownloadPressed(
                         formatList,
-                        if (isClipEnabled) listOf(VideoClip(videoClipDuration)) else emptyList(),
+                        if (isClippingVideo) listOf(VideoClip(videoClipDuration)) else emptyList(),
                         videoTitle
                     )
                 }, enabled = isSuggestedFormatSelected || formatList.isNotEmpty()) {
@@ -184,22 +187,25 @@ fun FormatPageImpl(
                         author = uploader ?: channel.toString(),
                         thumbnailUrl = thumbnail.toHttpsUrl(),
                         duration = (duration ?: .0).roundToInt(),
-                        showButton = (duration ?: .0) >= 0,
-                        isClipEnabled = isClipEnabled,
+                        showButton = isClippingEnabled && (duration ?: .0) >= 0,
+                        isClippingVideo = isClippingVideo,
                         onTitleClick = {
                             hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                             showRenameDialog = true
                         },
-                        onButtonClick = { isClipEnabled = it })
+                        onImageClicked = {
+                            thumbnail.toHttpsUrl().share()
+                        },
+                        onButtonClick = { isClippingVideo = it })
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Column {
-                        AnimatedVisibility(visible = isClipEnabled) {
+                        AnimatedVisibility(visible = isClippingVideo) {
                             Column {
                                 VideoSelectionSlider(modifier = Modifier.fillMaxWidth(),
                                     value = videoClipDuration,
                                     duration = duration?.roundToInt() ?: 0,
-                                    onDiscard = { isClipEnabled = false },
+                                    onDiscard = { isClippingVideo = false },
                                     onValueChange = { videoClipDuration = it },
                                     onDurationClick = { showVideoClipDialog = true })
                                 HorizontalDivider()
@@ -212,7 +218,8 @@ fun FormatPageImpl(
                     FormatSubtitle(text = stringResource(R.string.suggested))
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    FormatItem(formatDesc = format.toString(),
+                    FormatItem(
+                        formatDesc = format.toString(),
                         resolution = resolution.toString(),
                         codec = connectWithBlank(
                             vcodec.toString().substringBefore("."),
@@ -220,13 +227,13 @@ fun FormatPageImpl(
                         ).run { if (isNotBlank()) "($this)" else this },
                         ext = ext,
                         bitRate = tbr?.toFloat() ?: 0f,
-                        fileSize = fileSize ?: fileSizeApprox ?: 0,
+                        fileSize = fileSize ?: fileSizeApprox ?: .0,
                         selected = isSuggestedFormatSelected,
-                        onLongClick = {}) {
+                    ) {
                         isSuggestedFormatSelected = true
                         selectedAudioOnlyFormat = NOT_SELECTED
                         selectedVideoAudioFormat = NOT_SELECTED
-                        selectedAudioOnlyFormat = NOT_SELECTED
+                        selectedVideoOnlyFormat = NOT_SELECTED
                     }
                 }
             }
@@ -325,7 +332,6 @@ fun FormatPageImpl(
         }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RenameDialog(initialValue: String, onDismissRequest: () -> Unit, onConfirm: (String) -> Unit) {
     var filename by remember { mutableStateOf(initialValue) }

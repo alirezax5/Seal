@@ -42,6 +42,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,10 +51,10 @@ import com.google.accompanist.flowlayout.FlowRow
 import com.google.accompanist.flowlayout.SizeMode
 import com.junkfood.seal.R
 import com.junkfood.seal.database.CommandTemplate
-import com.junkfood.seal.ui.component.AccessibleOutlinedTextField
 import com.junkfood.seal.ui.component.AdjacentLabel
 import com.junkfood.seal.ui.component.BackButton
 import com.junkfood.seal.ui.component.ClearButton
+import com.junkfood.seal.ui.component.LinkButton
 import com.junkfood.seal.ui.component.PasteFromClipBoardButton
 import com.junkfood.seal.ui.component.ShortcutChip
 import com.junkfood.seal.ui.component.TextButtonWithIcon
@@ -115,11 +117,12 @@ fun TemplateEditPage(onDismissRequest: () -> Unit, templateId: Int) {
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .clearAndSetSemantics { })
-                    AccessibleOutlinedTextField(
-                        labelText = stringResource(R.string.template_label),
+                    val content = stringResource(R.string.template_label)
+                    OutlinedTextField(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 12.dp),
+                            .semantics { contentDescription = content }
+                            .padding(bottom = 24.dp),
                         value = templateName,
                         onValueChange = { templateName = it },
                         keyboardActions = KeyboardActions.Default,
@@ -144,16 +147,17 @@ fun TemplateEditPage(onDismissRequest: () -> Unit, templateId: Int) {
                         },
                         maxLines = 6,
                         minLines = 6,
-/*                        keyboardActions = KeyboardActions(onDone = {
-                            softwareKeyboardController?.hide()
-                            focusManager.moveFocus(FocusDirection.Down)
-                        }),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)*/
+                        /*                        keyboardActions = KeyboardActions(onDone = {
+                                                    softwareKeyboardController?.hide()
+                                                    focusManager.moveFocus(FocusDirection.Down)
+                                                }),
+                                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)*/
                     )
+                    LinkButton(modifier = Modifier.padding(vertical = 12.dp))
                     Divider(
                         Modifier
                             .fillMaxWidth()
-                            .padding(top = 48.dp, bottom = 24.dp)
+                            .padding(bottom = 24.dp)
                             .size(DividerDefaults.Thickness)
                             .clip(CircleShape),
                         color = MaterialTheme.colorScheme.outlineVariant,
@@ -201,8 +205,9 @@ fun TemplateEditPage(onDismissRequest: () -> Unit, templateId: Int) {
                         shortcuts.forEach { item ->
                             ShortcutChip(text = item.option, onClick = {
                                 templateText = templateText.run {
-                                    if (isEmpty()) "$this${item.option}"
-                                    else this.removeSuffix(" ") + " ${item.option}"
+                                    if (isEmpty()) item.option
+                                    else this.removeSuffix(" ")
+                                        .removeSuffix("\n") + "\n${item.option}"
                                 }
                             })
                         }

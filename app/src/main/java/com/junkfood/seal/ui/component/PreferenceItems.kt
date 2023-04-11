@@ -51,6 +51,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.junkfood.seal.R
+import com.junkfood.seal.ui.common.LocalDarkTheme
 import com.junkfood.seal.ui.theme.PreviewThemeLight
 import com.junkfood.seal.ui.theme.applyOpacity
 import com.junkfood.seal.ui.theme.harmonizeWithPrimary
@@ -516,7 +517,7 @@ fun PreferencesHintCard(
     title: String = "Title ".repeat(2),
     description: String? = "Description text ".repeat(3),
     icon: ImageVector? = Icons.Outlined.Translate,
-    isDarkTheme: Boolean = false,
+    isDarkTheme: Boolean = LocalDarkTheme.current.isDarkTheme(),
     backgroundColor: Color = MaterialTheme.colorScheme.run { if (isDarkTheme) onPrimaryContainer else secondaryContainer },
     contentColor: Color = MaterialTheme.colorScheme.run { if (isDarkTheme) surface else onSecondaryContainer },
     onClick: () -> Unit = {},
@@ -650,7 +651,7 @@ fun CreditItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp, 20.dp),
+                .padding(horizontal = 8.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(
@@ -665,12 +666,14 @@ fun CreditItem(
                         style = typography.titleMedium,
                         color = colorScheme.onSurface.applyOpacity(enabled)
                     )
-                    Text(
-                        text = license.toString(),
-                        color = colorScheme.onSurfaceVariant.applyOpacity(enabled),
-                        maxLines = 2, overflow = TextOverflow.Ellipsis,
-                        style = typography.bodyMedium,
-                    )
+                    license?.let {
+                        Text(
+                            text = it,
+                            color = colorScheme.onSurfaceVariant.applyOpacity(enabled),
+                            maxLines = 2, overflow = TextOverflow.Ellipsis,
+                            style = typography.bodyMedium,
+                        )
+                    }
                 }
             }
         }
@@ -748,6 +751,7 @@ fun TemplateItem(
 @Composable
 fun PreferenceSubtitle(
     modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(start = 18.dp, top = 24.dp, bottom = 12.dp),
     text: String,
     color: Color = MaterialTheme.colorScheme.primary,
 ) {
@@ -755,7 +759,7 @@ fun PreferenceSubtitle(
         text = text,
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 18.dp, top = 24.dp, bottom = 12.dp),
+            .padding(contentPadding),
         color = color,
         style = MaterialTheme.typography.labelLarge
     )
@@ -776,7 +780,7 @@ fun PreferenceInfo(
             modifier = Modifier.padding(), imageVector = icon, contentDescription = null
         )
         Text(
-            modifier = Modifier.padding(vertical = 16.dp),
+            modifier = Modifier.padding(top = 16.dp),
             text = text,
             style = MaterialTheme.typography.bodyMedium
         )

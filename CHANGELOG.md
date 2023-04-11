@@ -5,24 +5,53 @@ All notable changes (starting from v1.7.3) to stable releases will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v1.9.0][1.9.0] - unreleased
+## [v1.9.1][v1.9.1] - 2023-04-11
+
+### Added
+* Add Sponsor page: You can now support this app by sponsoring on GitHub!
+
+### Fixed
+* Fix a bug causing warnings not shown in logs of completed custom command tasks
+* Fix a bug causing videos not scanned into media library when private mode is enabled
+
+### Changed
+* Move the directory for temporary files to `cacheDir`
+
+## [v1.9.0][1.9.0] - 2023-03-12
 
 ### Added
 
-- Add share file operation in `VideoDetailDrawer`
-- Add pre-release channel for auto-updating
-- Option to update to Nightly builds of yt-dlp
-- Make video/audio clip in `FormatSelectionPage`
-- Edit title of the video in `FormatSelectionPage` before downloading
-- Implement a new method to extract cookies from the database of WebView
+* Add Preview channel for auto-updating
+* Add an option to update to Nightly builds of yt-dlp
+* Add a dialog for F-Droid builds in auto-update settings
+* Add a switch for auto-updating yt-dlp
+* Add the ability to share files in `VideoDetailDrawer`
+* Add a badge to the icon to indicate the count of running processes
+* Add a switch for disabling the temporary directory
+* Add format & quality preference for audio
+* Add custom format sorter
+* Add the ability to clip video and audio in `FormatSelectionPage` (experimental)
+* Add the ability to edit video titles in `FormatSelectionPage` before downloading
+* Add the ability to share the thumbnail url in `FormatSelectionPage`
+* Implement a new method to extract cookies from the `WebView` database
 
 ### Changed
 
 - Change the operation of open link to long pressing the link button in `VideoDetailDrawer`
+- Change the thread number range of multi-threaded download to 1-24
+- Change the status bar icon to filled icon
+- Change the quick settings for media format in the configuration dialog
 
 ### Fixed
 
 - Fix a bug causing high-quality audio not downloaded with YT Premium cookies & YT Music URLs
+- UI bug in `ShortcutChip` with long template
+- Fix a bug causing empty subtitle language breaks downloads
+- Fix an issue causing specific languages not visible in system settings on Android 13+
+- Fix a UI bug in the format selection page
+- Fix a bug causing app to crash when toasting in Android 5.0
+- Fix a UI bug causing LTR texts to display incorrectly in RTL locale environment
+- Add legacy app icon for API 21~25
 
 ### Known issues
 
@@ -96,3 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.8.1]: https://github.com/JunkFood02/Seal/releases/tag/v1.8.1
 
 [1.8.2]: https://github.com/JunkFood02/Seal/releases/tag/v1.8.2
+
+[1.9.0]: https://github.com/JunkFood02/Seal/releases/tag/v1.9.0
+
+[1.9.1]: https://github.com/JunkFood02/Seal/releases/tag/v1.9.1

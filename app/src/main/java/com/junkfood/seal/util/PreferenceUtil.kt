@@ -32,6 +32,7 @@ const val EXTRACT_AUDIO = "extract_audio"
 const val THUMBNAIL = "create_thumbnail"
 const val YT_DLP = "yt-dlp_init"
 const val YT_DLP_NIGHTLY = "yt-dlp_nightly"
+const val YT_DLP_UPDATE = "yt-dlp_auto_update"
 const val DEBUG = "debug"
 const val CONFIGURE = "configure"
 const val DARK_THEME_VALUE = "dark_theme_value"
@@ -81,7 +82,11 @@ private const val HIGH_CONTRAST = "high_contrast"
 const val DISABLE_PREVIEW = "disable_preview"
 const val PRIVATE_DIRECTORY = "private_directory"
 const val CROP_ARTWORK = "crop_artwork"
+const val EMBED_THUMBNAIL = "embed_thumbnail"
 const val FORMAT_SELECTION = "format_selection"
+const val VIDEO_CLIP = "video_clip"
+const val TEMP_DIRECTORY = "temp_dir"
+const val SHOW_SPONSOR_MSG = "sponsor_msg_v1"
 
 const val DEFAULT = 0
 const val NOT_SPECIFIED = 0
@@ -92,6 +97,13 @@ const val PRE_RELEASE = 1
 
 const val OPUS = 1
 const val M4A = 2
+
+const val MP4 = 1
+const val VP9 = 2
+const val AV1 = 3
+
+const val CONVERT_MP3 = 0
+const val CONVERT_M4A = 1
 
 const val HIGH = 1
 const val MEDIUM = 2
@@ -117,14 +129,16 @@ private val StringPreferenceDefaults =
         SPONSORBLOCK_CATEGORIES to "default",
         MAX_RATE to "1000",
         OUTPUT_PATH_TEMPLATE to "%(uploader)s/%(playlist_title)s/",
-        SUBTITLE_LANGUAGE to "en.*,.*-orig"
+        SUBTITLE_LANGUAGE to "en.*,.*-orig",
     )
 
 private val BooleanPreferenceDefaults =
     mapOf(
         FORMAT_SELECTION to true,
         CONFIGURE to true,
-        CELLULAR_DOWNLOAD to true
+        CELLULAR_DOWNLOAD to true,
+        YT_DLP_UPDATE to true,
+        TEMP_DIRECTORY to true,
     )
 
 private val IntPreferenceDefaults = mapOf(
@@ -138,7 +152,10 @@ private val IntPreferenceDefaults = mapOf(
     VIDEO_QUALITY to NOT_SPECIFIED,
     VIDEO_FORMAT to NOT_SPECIFIED,
     UPDATE_CHANNEL to STABLE,
+    SHOW_SPONSOR_MSG to 0
 )
+
+fun String.getStringDefault() = StringPreferenceDefaults.getOrElse(this) { "" }
 
 object PreferenceUtil {
     private val kv = MMKV.defaultMMKV()
@@ -205,9 +222,9 @@ object PreferenceUtil {
 
     fun getVideoFormatDesc(videoFormatCode: Int = getVideoFormat()): String {
         return when (videoFormatCode) {
-            1 -> "MP4"
-            2 -> "VP9"
-            3 -> "AV1"
+            MP4 -> "MP4"
+            VP9 -> "VP9"
+            AV1 -> "AV1"
             else -> context.getString(R.string.not_specified)
         }
     }
@@ -246,9 +263,8 @@ object PreferenceUtil {
     fun getConcurrentFragments(level: Int = CONCURRENT.getInt()): Float {
         return when (level) {
             1 -> 0f
-            4 -> 0.25f
-            8 -> 0.5f
-            12 -> 0.75f
+            8 -> 0.33f
+            16 -> 0.66f
             else -> 1f
         }
     }

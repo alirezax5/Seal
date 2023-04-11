@@ -1,5 +1,6 @@
 package com.junkfood.seal.ui.page.videolist
 
+import VideoStreamSVG
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -7,8 +8,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -57,12 +60,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.junkfood.seal.R
 import com.junkfood.seal.database.DownloadedVideoInfo
 import com.junkfood.seal.ui.common.LocalWindowWidthState
+import com.junkfood.seal.ui.common.SVGImage
 import com.junkfood.seal.ui.component.BackButton
+import com.junkfood.seal.ui.component.CheckBoxItem
 import com.junkfood.seal.ui.component.ConfirmButton
 import com.junkfood.seal.ui.component.DismissButton
 import com.junkfood.seal.ui.component.LargeTopAppBar
 import com.junkfood.seal.ui.component.MediaListItem
-import com.junkfood.seal.ui.component.MultiChoiceItem
 import com.junkfood.seal.ui.component.SealDialog
 import com.junkfood.seal.ui.component.VideoFilterChip
 import com.junkfood.seal.util.AUDIO_REGEX
@@ -100,10 +104,12 @@ fun VideoListPage(
     val videoListFlow = videoListViewModel.videoListFlow
 
     val videoList = videoListFlow.collectAsState(ArrayList()).value
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
-        rememberTopAppBarState(),
-        canScroll = { true }
-    )
+//    val videoList = emptyList<DownloadedVideoInfo>()
+    val scrollBehavior =
+        if (videoList.isNotEmpty()) TopAppBarDefaults.exitUntilCollapsedScrollBehavior(
+            rememberTopAppBarState(),
+            canScroll = { true }
+        ) else TopAppBarDefaults.pinnedScrollBehavior()
     val scope = rememberCoroutineScope()
 
     val fileSizeMap = remember(videoList.size) {
@@ -216,8 +222,7 @@ fun VideoListPage(
     }
 
     Scaffold(
-        modifier = Modifier
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
                 title = {
@@ -231,16 +236,17 @@ fun VideoListPage(
                         onBackPressed()
                     }
                 }, actions = {
-                    IconToggleButton(
-                        modifier = Modifier,
-                        onCheckedChange = { isSelectEnabled = !isSelectEnabled },
-                        checked = isSelectEnabled
-                    ) {
-                        Icon(
-                            Icons.Outlined.Checklist,
-                            contentDescription = stringResource(R.string.multiselect_mode)
-                        )
-                    }
+                    if (videoList.isNotEmpty())
+                        IconToggleButton(
+                            modifier = Modifier,
+                            onCheckedChange = { isSelectEnabled = !isSelectEnabled },
+                            checked = isSelectEnabled
+                        ) {
+                            Icon(
+                                Icons.Outlined.Checklist,
+                                contentDescription = stringResource(R.string.multiselect_mode)
+                            )
+                        }
                 }, scrollBehavior = scrollBehavior
             )
         }, bottomBar = {
@@ -294,6 +300,27 @@ fun VideoListPage(
             }
         }
     ) { innerPadding ->
+        if (videoList.isEmpty())
+            Box(
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    SVGImage(
+                        SVGString = VideoStreamSVG,
+                        contentDescription = null,
+                        modifier = Modifier.padding(horizontal = 72.dp, vertical = 20.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.no_downloaded_media),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
         val cellCount = when (LocalWindowWidthState.current) {
             WindowWidthSizeClass.Expanded -> 2
             else -> 1
@@ -303,9 +330,10 @@ fun VideoListPage(
             modifier = Modifier
                 .padding(innerPadding), columns = GridCells.Fixed(cellCount)
         ) {
-            item(span = span) {
-                FilterChips(Modifier.fillMaxWidth())
-            }
+            if (videoList.isNotEmpty())
+                item(span = span) {
+                    FilterChips(Modifier.fillMaxWidth())
+                }
             for (info in videoList) {
                 val fileSize =
                     fileSizeMap.getOrElse(info.id) { File(info.videoPath).length() }
@@ -355,13 +383,12 @@ fun VideoListPage(
                     Text(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 24.dp)
-                        ,
+                            .padding(horizontal = 24.dp),
                         text = stringResource(R.string.delete_multiple_items_msg).format(
                             selectedItemIds.size
                         )
                     )
-                    MultiChoiceItem(
+                    CheckBoxItem(
                         modifier = Modifier.padding(horizontal = 12.dp),
                         text = stringResource(R.string.delete_file) + " (${selectedFileSizeSum.toFileSizeText()})",
                         checked = deleteFile

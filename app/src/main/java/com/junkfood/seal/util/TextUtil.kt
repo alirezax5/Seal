@@ -15,7 +15,7 @@ import kotlin.math.roundToInt
 
 object ToastUtil {
     fun makeToast(text: String) {
-        Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+        Toast.makeText(context.applicationContext, text, Toast.LENGTH_SHORT).show()
     }
 
     fun makeToastSuspend(text: String) {
@@ -25,7 +25,7 @@ object ToastUtil {
     }
 
     fun makeToast(stringId: Int) {
-        Toast.makeText(context, context.getString(stringId), Toast.LENGTH_SHORT).show()
+        Toast.makeText(context.applicationContext, context.getString(stringId), Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -33,7 +33,7 @@ private const val GIGA_BYTES = 1024f * 1024f * 1024f
 private const val MEGA_BYTES = 1024f * 1024f
 
 @Composable
-fun Long.toFileSizeText() = this.toFloat().run {
+fun Number.toFileSizeText() = this.toFloat().run {
     if (this > GIGA_BYTES)
         stringResource(R.string.filesize_gb).format(this / GIGA_BYTES)
     else stringResource(R.string.filesize_mb).format(this / MEGA_BYTES)

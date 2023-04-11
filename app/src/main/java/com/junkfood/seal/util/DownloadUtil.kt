@@ -37,7 +37,6 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.Locale
-import kotlin.math.roundToInt
 
 object CookieScheme {
     const val NAME = "name"
@@ -123,13 +122,13 @@ object DownloadUtil {
         val downloadPlaylist: Boolean = PreferenceUtil.getValue(PLAYLIST),
         val subdirectory: Boolean = PreferenceUtil.getValue(SUBDIRECTORY),
         val customPath: Boolean = PreferenceUtil.getValue(CUSTOM_PATH),
+        val tempDirectory: Boolean = TEMP_DIRECTORY.getBoolean(),
         val outputPathTemplate: String = PreferenceUtil.getOutputPathTemplate(),
         val downloadSubtitle: Boolean = PreferenceUtil.getValue(SUBTITLE),
         val embedSubtitle: Boolean = EMBED_SUBTITLE.getBoolean(),
         val subtitleLanguage: String = SUBTITLE_LANGUAGE.getString(),
         val autoSubtitle: Boolean = PreferenceUtil.getValue(AUTO_SUBTITLE),
-        val concurrentFragments: Float = PreferenceUtil.getConcurrentFragments(),
-        val maxFileSize: String = MAX_FILE_SIZE.getString(),
+        val concurrentFragments: Int = CONCURRENT.getInt(),
         val sponsorBlock: Boolean = PreferenceUtil.getValue(SPONSORBLOCK),
         val sponsorBlockCategory: String = PreferenceUtil.getSponsorBlockCategories(),
         val cookies: Boolean = COOKIES.getBoolean(),
@@ -150,7 +149,9 @@ object DownloadUtil {
         val cropArtwork: Boolean = PreferenceUtil.getValue(CROP_ARTWORK),
         val sdcard: Boolean = PreferenceUtil.getValue(SDCARD_DOWNLOAD),
         val sdcardUri: String = SDCARD_URI.getString(),
+        val embedThumbnail: Boolean = EMBED_THUMBNAIL.getBoolean(),
         val videoClips: List<VideoClip> = emptyList(),
+        val debug: Boolean = DEBUG.getBoolean(),
         val newTitle: String = ""
     )
 
@@ -201,6 +202,7 @@ object DownloadUtil {
                 }
                 close()
             }
+            close()
             Log.d(TAG, "Loaded ${cookieList.size} cookies from database!")
             cookieList.fold(StringBuilder(COOKIE_HEADER)) { acc, cookie ->
                 acc.append(cookie.toNetscapeCookieString()).append("\n")
@@ -224,13 +226,18 @@ object DownloadUtil {
                     addOption("--write-auto-subs")
                     addOption("--extractor-args", "youtube:skip=translated_subs")
                 }
-                addOption("--sub-langs", subtitleLanguage)
+                addOption(
+                    "--sub-langs",
+                    subtitleLanguage.ifEmpty { SUBTITLE_LANGUAGE.getStringDefault() })
                 if (embedSubtitle) {
                     addOption("--remux-video", "mkv")
                     addOption("--embed-subs")
                 } else {
                     addOption("--write-subs")
                 }
+            }
+            if (embedThumbnail) {
+                addOption("--embed-thumbnail")
             }
             if (videoClips.isEmpty()) addOption("--embed-chapters")
         }
@@ -255,9 +262,6 @@ object DownloadUtil {
 
     @CheckResult
     private fun DownloadPreferences.toVideoFormatSorter(): String = this.run {
-        val fileSize = if (maxFileSize.isNumberInRange(1, 4096)) {
-            "size:${maxFileSize}M"
-        } else ""
         val format = when (videoFormat) {
             1 -> "ext"
             2 -> "vcodec:vp9.2"
@@ -274,16 +278,14 @@ object DownloadUtil {
             7 -> "+res"
             else -> ""
         }
-        return@run connectWithDelimiter(fileSize, format, res, delimiter = ",")
+        return@run connectWithDelimiter(format, res, delimiter = ",")
     }
 
     private fun YoutubeDLRequest.applyFormatSorter(
         preferences: DownloadPreferences, sorter: String
     ) = preferences.run {
         if (formatSorting && sortingFields.isNotEmpty()) addOption("-S", sortingFields)
-        else {
-            if (sorter.isNotEmpty()) addOption("-S", sorter) else {
-            }
+        else if (sorter.isNotEmpty()) addOption("-S", sorter) else {
         }
     }
 
@@ -300,11 +302,11 @@ object DownloadUtil {
             if (formatId.isNotEmpty()) addOption("-f", formatId)
             else if (convertAudio) {
                 when (audioConvertFormat) {
-                    1 -> {
+                    CONVERT_MP3 -> {
                         addOption("--audio-format", "mp3")
                     }
 
-                    2 -> {
+                    CONVERT_M4A -> {
                         addOption("--audio-format", "m4a")
                     }
                 }
@@ -385,6 +387,9 @@ object DownloadUtil {
                 if (cookies) {
                     enableCookies()
                 }
+                if (debug) {
+                    addOption("-v")
+                }
 
                 if (rateLimit && maxDownloadRate.isNumberInRange(1, 1000000)) {
                     addOption("-r", "${maxDownloadRate}K")
@@ -399,8 +404,8 @@ object DownloadUtil {
 
                 if (aria2c) {
                     enableAria2c()
-                } else if (concurrentFragments > 0f) {
-                    addOption("--concurrent-fragments", (concurrentFragments * 16).roundToInt())
+                } else if (concurrentFragments > 1) {
+                    addOption("--concurrent-fragments", concurrentFragments)
                 }
 
                 if (extractAudio || (videoInfo.vcodec == "none")) {
@@ -442,7 +447,7 @@ object DownloadUtil {
                 if (newTitle.isNotEmpty()) {
                     addCommands(listOf("--replace-in-metadata", "title", ".+", newTitle))
                 }
-                if (Build.VERSION.SDK_INT > 23 && !sdcard) addOption(
+                if (Build.VERSION.SDK_INT > 23 && !sdcard && tempDirectory) addOption(
                     "-P", "temp:" + context.getTempDir()
                 )
                 val outputFileName =
@@ -482,21 +487,24 @@ object DownloadUtil {
         downloadPath: String,
         sdcardUri: String
     ): Result<List<String>> = preferences.run {
-        if (privateMode) {
-            Result.success(emptyList())
-        } else if (sdcard) {
-            Result.success(moveFilesToSdcard(
+        if (sdcard) {
+            moveFilesToSdcard(
                 sdcardUri = sdcardUri, tempPath = context.getSdcardTempDir(videoInfo.id)
-            ).apply {
-                insertInfoIntoDownloadHistory(videoInfo, this)
-            })
+            ).run {
+                if (privateMode) {
+                    Result.success(emptyList())
+                } else this.apply {
+                    getOrNull()?.let { insertInfoIntoDownloadHistory(videoInfo, it) }
+                }
+            }
         } else {
-            Result.success(
-                scanVideoIntoDownloadHistory(
-                    videoInfo = videoInfo,
-                    downloadPath = downloadPath,
-                )
-            )
+            scanVideoIntoDownloadHistory(
+                videoInfo = videoInfo,
+                downloadPath = downloadPath,
+            ).run {
+                if (privateMode) Result.success(emptyList())
+                else Result.success(this)
+            }
         }
     }
 
@@ -513,6 +521,10 @@ object DownloadUtil {
                 "-P",
                 if (PreferenceUtil.getValue(PRIVATE_DIRECTORY)) App.getPrivateDownloadDirectory() else videoDownloadDir
             )
+            if (Build.VERSION.SDK_INT > 23 && TEMP_DIRECTORY.getBoolean()) addOption(
+                "-P", "temp:" + context.getTempDir()
+            )
+            addOption("--newline")
             if (PreferenceUtil.getValue(ARIA2C)) {
                 enableAria2c()
             }
@@ -521,7 +533,6 @@ object DownloadUtil {
                     template.template, context.getConfigFile()
                 ).absolutePath
             )
-//            addOption("-v")
             if (PreferenceUtil.getValue(COOKIES)) {
                 enableCookies()
             }
@@ -545,7 +556,7 @@ object DownloadUtil {
                     template = template, url = url, line = text, progress = progress
                 )
             }
-            onTaskEnded(template, url, response.out)
+            onTaskEnded(template, url, response.out + "\n" + response.err)
         }.onFailure {
             it.printStackTrace()
             if (it is YoutubeDL.CanceledException) return@onFailure

@@ -37,7 +37,7 @@
     <string name="remove">Remove</string>
     <string name="delete_file">Delete</string>
     <string name="about">About</string>
-    <string name="about_page">Version, releases, credits</string>
+    <string name="about_page">Version, feedback, auto update</string>
     <string name="back">Back</string>
     <string name="version">Version</string>
     <string name="release_desc">Look for changelogs and new versions</string>
@@ -78,7 +78,7 @@
     <string name="convert_audio_format_desc">Re-encoding audio files will cause loss in audio quality and increase in file size.</string>
     <string name="video_quality">Video quality</string>
     <string name="best_quality">Best quality (default)</string>
-    <string name="video_quality_desc">Limit the format quality and the file size</string>
+    <string name="video_quality_desc">Limit the video quality when multiple are present</string>
     <string name="not_specified">Not specified (default)</string>
     <string name="video_format_preference">Preferred video format</string>
     <string name="preferred_format_desc">Chosen format when multiple are provided</string>
@@ -106,7 +106,7 @@
     <string name="execute_command_notification">Running custom commands…</string>
     <string name="battery_settings_desc">"Please set battery usage of this app to \"Unrestricted\" in the system settings to download in the background."
     </string>
-    <string name="concurrent_download">Download multiple parts</string>
+    <string name="concurrent_download">Multi-threaded download</string>
     <string name="concurrent_download_desc">Download more parts of M3U8/MPD videos in parallel</string>
     <string name="concurrent_download_num">%d thread(s) would be used to download DASH/HLS native video concurrently.</string>
     <string name="options">Options</string>
@@ -139,7 +139,7 @@
     <string name="prefix">Prefix</string>
     <string name="custom_output_path">Custom subdirectory</string>
     <string name="custom_output_path_desc">Use template for subdirectory</string>
-    <string name="edit_custom_path_template_desc">Specify subdirectory with available fields provided by yt-dlp</string>
+    <string name="edit_custom_path_template_desc">Add custom prefix to the -o option with available fields provided by yt-dlp</string>
     <string name="embed_subtitles">Embed subtitles</string>
     <string name="embed_subtitles_desc">Embed subtitles provided into videos if available</string>
     <string name="new_template">New template</string>
@@ -164,7 +164,7 @@
     <string name="la_es" translatable="false">Español</string>
     <string name="la_tr" translatable="false">Türkçe</string>
     <string name="la_ru" translatable="false">Русский</string>
-    <string name="la_ar" translatable="false">عربي</string>
+    <string name="la_ar" translatable="false">العربية</string>
     <string name="la_uk" translatable="false">Українська</string>
     <string name="la_in" translatable="false">Indonesia</string>
     <string name="la_fa" translatable="false">فارسی</string>
@@ -188,6 +188,7 @@
     <string name="la_az" translatable="false">Azərbaycanca</string>
     <string name="la_nn" translatable="false">Nynorsk</string>
     <string name="la_pa" translatable="false">ਪੰਜਾਬੀ</string>
+    <string name="la_ta" translatable="false">தமிழ்</string>
 
     <string name="status_enqueued">Enqueued</string>
     <string name="status_completed">Completed</string>
@@ -224,7 +225,7 @@
     <string name="cookies_desc">Use Netscape formatted cookies for downloads</string>
     <string name="cookies_file_name" translatable="false">cookies.txt</string>
     <string name="clear_temp_files">Clear temporary files</string>
-    <string name="clear_temp_files_desc">Delete all temporary files from the download directory</string>
+    <string name="clear_temp_files_desc">Delete all temporary files from the internal directory</string>
     <string name="clear_temp_files_count">Deleted %1$d temporary file(s)</string>
     <string name="clear_temp_files_info">Temporary files can be used to resume cancelled downloads. Are you sure to delete all of these files?</string>
     <string name="multiselect_mode">Multiselect mode</string>
@@ -322,5 +323,27 @@
     <string name="minute">minute</string>
     <string name="clear_all_cookies">Clear all cookies</string>
     <string name="clear_all_cookies_desc">Delete all the cookies stored in the app for good?</string>
-
+    <string name="temporary_directory">Temporary directory</string>
+    <string name="temporary_directory_desc">Store temporary files in the internal directory</string>
+    <string name="sponsor">Sponsor</string>
+    <string name="sponsor_desc">Support this app by sponsoring on GitHub</string>
+    <string name="sponsor_msg">Seal will be always free and open source for everyone. If you like it, please consider sponsoring me on GitHub!</string>
+    <string name="feedback">Feedback</string>
+    <string name="sponsors">Sponsors</string>
+    <string name="audio_format">Audio format</string>
+    <string name="no_downloaded_media">No downloaded media</string>
+    <string name="beta_features">Beta</string>
+    <string name="enable_experimental_feature">Enable experimental feature?</string>
+    <string name="clip_video_dialog_msg">Downloads using this feature will be delegated to FFmpeg to download selected sections of the video, this feature is still experimental and the cutting will not be completely accurate, not all formats support this feature and you may experience slower download speeds.</string>
+    <string name="clip_video_desc">Make video clips in the format selection page</string>
+    <string name="embed_thumbnail" translatable="false">Embed thumbnail</string>
+    <string name="embed_thumbnail_desc" translatable="false">Embed thumbnails into videos</string>
+    <string name="auto_update_disabled_msg">Auto-update is not available for %1$s builds. If you don\'t have %1$s installed on your device, or would like to preview upcoming new features in Seal, please consider %2$s.</string>
+    <string name="switch_to_github_builds">switching to GitHub builds</string>
+    <string name="okay">Okay</string>
+    <string name="got_it">Got it</string>
+    <string name="feature_unavailable">Feature not available</string>
+    <string name="no_custom_command_tasks">No custom command tasks</string>
+    <string name="msg_from_developer">Message from developer</string>
+    <string name="sponsor_msg2">Thank you very much!</string>
 </resources>

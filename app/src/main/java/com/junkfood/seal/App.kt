@@ -29,7 +29,9 @@ import com.junkfood.seal.util.PreferenceUtil.getString
 import com.junkfood.seal.util.TEMPLATE_EXAMPLE
 import com.junkfood.seal.util.TEMPLATE_ID
 import com.junkfood.seal.util.ToastUtil
+import com.junkfood.seal.util.UpdateUtil
 import com.junkfood.seal.util.VIDEO_DIRECTORY
+import com.junkfood.seal.util.YT_DLP
 import com.tencent.mmkv.MMKV
 import com.yausername.aria2c.Aria2c
 import com.yausername.ffmpeg.FFmpeg
@@ -78,6 +80,7 @@ class App : Application() {
                 DownloadUtil.getCookiesContentFromDatabase().getOrNull()?.let {
                     FileUtil.writeContentToFile(it, getCookiesFile())
                 }
+                UpdateUtil.deleteOutdatedApk()
             } catch (e: Exception) {
                 e.printStackTrace()
                 clipboard.setPrimaryClip(ClipData.newPlainText(null, e.message))
@@ -106,8 +109,6 @@ class App : Application() {
         lateinit var applicationScope: CoroutineScope
         lateinit var connectivityManager: ConnectivityManager
         lateinit var packageInfo: PackageInfo
-        const val userAgentHeader =
-            "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Mobile Safari/537.36 Edg/105.0.1343.53"
 
         var isServiceRunning = false
 
@@ -175,7 +176,7 @@ class App : Application() {
             return StringBuilder().append("App version: $versionName ($versionCode)\n")
                 .append("Device information: Android $release (API ${Build.VERSION.SDK_INT})\n")
                 .append("Supported ABIs: ${Build.SUPPORTED_ABIS.contentToString()}\n")
-                .append("Yt-dlp version: ${YoutubeDL.version(context.applicationContext)}\n")
+                .append("Yt-dlp version: ${YT_DLP.getString()}\n")
                 .toString()
         }
 

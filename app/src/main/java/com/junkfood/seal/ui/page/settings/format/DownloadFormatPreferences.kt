@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AudioFile
+import androidx.compose.material.icons.outlined.ContentCut
 import androidx.compose.material.icons.outlined.Crop
 import androidx.compose.material.icons.outlined.HighQuality
 import androidx.compose.material.icons.outlined.MusicNote
@@ -13,7 +14,9 @@ import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material.icons.outlined.VideoFile
 import androidx.compose.material.icons.outlined.VideoSettings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -26,9 +29,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import com.junkfood.seal.R
 import com.junkfood.seal.ui.common.booleanState
 import com.junkfood.seal.ui.component.BackButton
+import com.junkfood.seal.ui.component.ConfirmButton
+import com.junkfood.seal.ui.component.DismissButton
 import com.junkfood.seal.ui.component.LargeTopAppBar
 import com.junkfood.seal.ui.component.PreferenceInfo
 import com.junkfood.seal.ui.component.PreferenceItem
@@ -46,6 +52,7 @@ import com.junkfood.seal.util.PreferenceUtil.getString
 import com.junkfood.seal.util.PreferenceUtil.updateBoolean
 import com.junkfood.seal.util.SORTING_FIELDS
 import com.junkfood.seal.util.SUBTITLE
+import com.junkfood.seal.util.VIDEO_CLIP
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,6 +80,7 @@ fun DownloadFormatPreferences(onBackPressed: () -> Unit, navigateToSubtitlePage:
     var showVideoQualityDialog by remember { mutableStateOf(false) }
     var showVideoFormatDialog by remember { mutableStateOf(false) }
     var showFormatSorterDialog by remember { mutableStateOf(false) }
+    var showVideoClipDialog by remember { mutableStateOf(false) }
 
     var videoFormat by remember { mutableStateOf(PreferenceUtil.getVideoFormatDesc()) }
     var videoResolution by remember { mutableStateOf(PreferenceUtil.getVideoResolutionDesc()) }
@@ -80,8 +88,10 @@ fun DownloadFormatPreferences(onBackPressed: () -> Unit, navigateToSubtitlePage:
     val sortingFields by remember { mutableStateOf(SORTING_FIELDS.getString()) }
     val audioFormat by remember(showAudioFormatDialog) { mutableStateOf(PreferenceUtil.getAudioFormatDesc()) }
     var convertAudio by AUDIO_CONVERT.booleanState
-    var formatSorting by FORMAT_SORTING.booleanState
+    var isFormatSortingEnabled by FORMAT_SORTING.booleanState
     val audioQuality by remember(showAudioQualityDialog) { mutableStateOf(PreferenceUtil.getAudioQualityDesc()) }
+    var isVideoClipEnabled by VIDEO_CLIP.booleanState
+    var isFormatSelectionEnabled by FORMAT_SELECTION.booleanState
 
     Scaffold(
         modifier = Modifier
@@ -132,7 +142,7 @@ fun DownloadFormatPreferences(onBackPressed: () -> Unit, navigateToSubtitlePage:
                         title = stringResource(id = R.string.audio_format_preference),
                         description = audioFormat,
                         icon = Icons.Outlined.AudioFile,
-                        enabled = !isCustomCommandEnabled,
+                        enabled = !isCustomCommandEnabled && !isFormatSortingEnabled,
                         onClick = { showAudioFormatDialog = true }
                     )
                 }
@@ -142,7 +152,7 @@ fun DownloadFormatPreferences(onBackPressed: () -> Unit, navigateToSubtitlePage:
                         description = audioQuality,
                         icon = Icons.Outlined.HighQuality,
                         onClick = { showAudioQualityDialog = true },
-                        enabled = !isCustomCommandEnabled
+                        enabled = !isCustomCommandEnabled && !isFormatSortingEnabled
                     )
                 }
                 item {
@@ -179,7 +189,7 @@ fun DownloadFormatPreferences(onBackPressed: () -> Unit, navigateToSubtitlePage:
                         title = stringResource(R.string.video_format_preference),
                         description = videoFormat,
                         icon = Icons.Outlined.VideoFile,
-                        enabled = !audioSwitch && !isCustomCommandEnabled
+                        enabled = !audioSwitch && !isCustomCommandEnabled && !isFormatSortingEnabled
                     ) { showVideoFormatDialog = true }
                 }
                 item {
@@ -187,9 +197,23 @@ fun DownloadFormatPreferences(onBackPressed: () -> Unit, navigateToSubtitlePage:
                         title = stringResource(id = R.string.video_quality),
                         description = videoResolution,
                         icon = Icons.Outlined.HighQuality,
-                        enabled = !audioSwitch && !isCustomCommandEnabled
+                        enabled = !audioSwitch && !isCustomCommandEnabled && !isFormatSortingEnabled
                     ) { showVideoQualityDialog = true }
                 }
+                /*                item {
+                                    var embedThumbnail by EMBED_THUMBNAIL.booleanState
+
+                                    PreferenceSwitch(
+                                        title = stringResource(id = R.string.embed_thumbnail),
+                                        description = stringResource(id = R.string.embed_thumbnail_desc),
+                                        icon = Icons.Outlined.Photo,
+                                        isChecked = embedThumbnail,
+                                        enabled = !isCustomCommandEnabled && !audioSwitch
+                                    ) {
+                                        embedThumbnail = !embedThumbnail
+                                        EMBED_THUMBNAIL.updateBoolean(embedThumbnail)
+                                    }
+                                }*/
 
                 item {
 
@@ -210,15 +234,14 @@ fun DownloadFormatPreferences(onBackPressed: () -> Unit, navigateToSubtitlePage:
                         icon = Icons.Outlined.Sort,
                         description = stringResource(id = R.string.format_sorting_desc),
                         enabled = !isCustomCommandEnabled,
-                        isChecked = formatSorting,
+                        isChecked = isFormatSortingEnabled,
                         onChecked = {
-                            formatSorting = !formatSorting
-                            FORMAT_SORTING.updateBoolean(formatSorting)
+                            isFormatSortingEnabled = !isFormatSortingEnabled
+                            FORMAT_SORTING.updateBoolean(isFormatSortingEnabled)
                         }, onClick = { showFormatSorterDialog = true }
                     )
                 }
                 item {
-                    var isFormatSelectionEnabled by FORMAT_SELECTION.booleanState
                     PreferenceSwitch(
                         title = stringResource(id = R.string.format_selection),
                         icon = Icons.Outlined.VideoSettings,
@@ -228,6 +251,22 @@ fun DownloadFormatPreferences(onBackPressed: () -> Unit, navigateToSubtitlePage:
                     ) {
                         isFormatSelectionEnabled = !isFormatSelectionEnabled
                         PreferenceUtil.updateValue(FORMAT_SELECTION, isFormatSelectionEnabled)
+                    }
+                }
+                item {
+                    PreferenceSwitch(
+                        title = stringResource(id = R.string.clip_video),
+                        description = stringResource(
+                            id = R.string.clip_video_desc
+                        ), icon = Icons.Outlined.ContentCut,
+                        isChecked = isVideoClipEnabled,
+                        enabled = !isCustomCommandEnabled && isFormatSelectionEnabled
+                    ) {
+                        if (!isVideoClipEnabled) showVideoClipDialog = true
+                        else {
+                            isVideoClipEnabled = false
+                            VIDEO_CLIP.updateBoolean(false)
+                        }
                     }
                 }
             }
@@ -255,5 +294,29 @@ fun DownloadFormatPreferences(onBackPressed: () -> Unit, navigateToSubtitlePage:
     }
     if (showFormatSorterDialog) {
         FormatSortingDialog { showFormatSorterDialog = false }
+    }
+    if (showVideoClipDialog) {
+        AlertDialog(
+            onDismissRequest = { showVideoClipDialog = false },
+            icon = { Icon(Icons.Outlined.ContentCut, null) },
+            confirmButton = {
+                ConfirmButton {
+                    isVideoClipEnabled = true
+                    VIDEO_CLIP.updateBoolean(true)
+                    showVideoClipDialog = false
+                }
+            }, dismissButton = {
+                DismissButton {
+                    showVideoClipDialog = false
+                }
+            }, text = {
+                Text(stringResource(id = R.string.clip_video_dialog_msg))
+            }, title = {
+                Text(
+                    stringResource(id = R.string.enable_experimental_feature),
+                    textAlign = TextAlign.Center
+                )
+            }
+        )
     }
 }

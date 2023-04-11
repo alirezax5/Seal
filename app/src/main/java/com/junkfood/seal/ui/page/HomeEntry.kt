@@ -50,6 +50,7 @@ import com.junkfood.seal.ui.page.download.PlaylistSelectionPage
 import com.junkfood.seal.ui.page.settings.SettingsPage
 import com.junkfood.seal.ui.page.settings.about.AboutPage
 import com.junkfood.seal.ui.page.settings.about.CreditsPage
+import com.junkfood.seal.ui.page.settings.about.DonatePage
 import com.junkfood.seal.ui.page.settings.about.UpdatePage
 import com.junkfood.seal.ui.page.settings.appearance.AppearancePreferences
 import com.junkfood.seal.ui.page.settings.appearance.DarkThemePreferences
@@ -66,14 +67,17 @@ import com.junkfood.seal.ui.page.settings.network.NetworkPreferences
 import com.junkfood.seal.ui.page.settings.network.WebViewPage
 import com.junkfood.seal.ui.page.videolist.VideoListPage
 import com.junkfood.seal.util.PreferenceUtil
+import com.junkfood.seal.util.PreferenceUtil.getBoolean
 import com.junkfood.seal.util.PreferenceUtil.getString
 import com.junkfood.seal.util.ToastUtil
 import com.junkfood.seal.util.UpdateUtil
 import com.junkfood.seal.util.YT_DLP
+import com.junkfood.seal.util.YT_DLP_UPDATE
 import com.yausername.youtubedl_android.YoutubeDL
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val TAG = "HomeEntry"
 
@@ -178,15 +182,26 @@ fun HomeEntry(
             navController.navigate(Route.SETTINGS)
         }
         LaunchedEffect(Unit) {
+            if (!YT_DLP_UPDATE.getBoolean()
+                && YT_DLP.getString().isNotEmpty()
+            ) return@LaunchedEffect
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    val res = UpdateUtil.updateYtDlp()
+                    if (res == YoutubeDL.UpdateStatus.DONE) {
+                        ToastUtil.makeToastSuspend(context.getString(R.string.yt_dlp_up_to_date) + " (${YT_DLP.getString()})")
+                    }
+                }
+            }.onFailure {
+                it.printStackTrace()
+            }
+        }
+        LaunchedEffect(Unit) {
             if (!PreferenceUtil.isNetworkAvailableForDownload() || !PreferenceUtil.isAutoUpdateEnabled()
             )
                 return@LaunchedEffect
             launch(Dispatchers.IO) {
                 runCatching {
-                    val res = UpdateUtil.updateYtDlp()
-                    if (res == YoutubeDL.UpdateStatus.DONE) {
-                        ToastUtil.makeToastSuspend(context.getString(R.string.yt_dlp_up_to_date) + " (${YT_DLP.getString()})")
-                    }
                     UpdateUtil.checkForUpdate()?.let {
                         latestRelease = it
                         showUpdateDialog = true
@@ -257,9 +272,10 @@ fun NavGraphBuilder.settingsGraph(
             AboutPage(
                 onBackPressed = { onBackPressed() },
                 onNavigateToCreditsPage = { navController.navigate(Route.CREDITS) },
-                onNavigateToUpdatePage = { navController.navigate(Route.AUTO_UPDATE) })
-
+                onNavigateToUpdatePage = { navController.navigate(Route.AUTO_UPDATE) },
+                onNavigateToDonatePage = { navController.navigate(Route.DONATE) })
         }
+        animatedComposable(Route.DONATE) { DonatePage { onBackPressed() } }
         animatedComposable(Route.CREDITS) { CreditsPage { onBackPressed() } }
         animatedComposable(Route.AUTO_UPDATE) { UpdatePage { onBackPressed() } }
         animatedComposable(Route.APPEARANCE) { AppearancePreferences(navController) }

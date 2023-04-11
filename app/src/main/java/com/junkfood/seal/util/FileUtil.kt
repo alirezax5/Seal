@@ -121,7 +121,7 @@ object FileUtil {
     fun moveFilesToSdcard(
         tempPath: File,
         sdcardUri: String
-    ): List<String> {
+    ): Result<List<String>> {
         val uriList = mutableListOf<String>()
         val destDir = Uri.parse(sdcardUri).run {
             DocumentsContract.buildDocumentUriUsingTree(
@@ -129,7 +129,7 @@ object FileUtil {
                 DocumentsContract.getTreeDocumentId(this)
             )
         }
-        tempPath.runCatching {
+        val res = tempPath.runCatching {
             walkTopDown().forEach {
                 if (it.isDirectory) return@forEach
                 val mimeType =
@@ -150,12 +150,10 @@ object FileUtil {
                 outputStream.closeQuietly()
                 uriList.add(destUri.toString())
             }
-        }.onFailure {
-            it.printStackTrace()
+            uriList
         }
-
         tempPath.deleteRecursively()
-        return uriList
+        return res
     }
 
     fun clearTempFiles(downloadDir: File): Int {
@@ -177,11 +175,13 @@ object FileUtil {
     fun Context.getCookiesFile() =
         File(getConfigDirectory(), "cookies.txt")
 
-    fun Context.getTempDir() = File(filesDir, "tmp")
+    fun Context.getTempDir() = File(cacheDir, "tmp")
 
-    fun Context.getSdcardTempDir(child: String?): File = File(filesDir, "sdcard_tmp").run {
+    fun Context.getSdcardTempDir(child: String?): File = File(cacheDir, "sdcard_tmp").run {
         child?.let { resolve(it) } ?: this
     }
+
+    fun Context.getLegacyTempDir() = File(filesDir, "tmp")
 
     fun File.createEmptyFile(fileName: String) = this.runCatching {
         mkdir()
